@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String?
+  name          String?
+  phone         String?
+  identityLevel Int      @default(0)
+  trustScore    Float    @default(3.0)
+  agentConfig   String   @default("{}")
+  stripeId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  listings           Listing[]
+  buyerNegotiations  Negotiation[] @relation("BuyerNegotiations")
+  sellerNegotiations Negotiation[] @relation("SellerNegotiations")
+  buyerTransactions  Transaction[] @relation("BuyerTransactions")
+  sellerTransactions Transaction[] @relation("SellerTransactions")
+  ratings            Rating[]
+}
+
+model Listing {
+  id                  String   @id @default(cuid())
+  sellerId            String
+  seller              User     @relation(fields: [sellerId], references: [id])
+  title               String
+  description         String
+  category            String   @default("General")
+  condition           String   @default("GOOD")
+  askingPrice         Float
+  floorPrice          Float?
+  autoAcceptThreshold Float?
+  status              String   @default("ACTIVE")
+  city                String?
+  fulfillment         String   @default("SHIPPING,LOCAL_PICKUP")
+  viewCount           Int      @default(0)
+  fraudScore          Int      @default(0)
+  aiGenerated         Boolean  @default(true)
+  photoUrl            String?
+  createdAt           DateTime @default(now())
+  expiresAt           DateTime?
+
+  negotiations Negotiation[]
+}
+
+model Negotiation {
+  id          String    @id @default(cuid())
+  listingId   String
+  listing     Listing   @relation(fields: [listingId], references: [id])
+  buyerId     String
+  buyer       User      @relation("BuyerNegotiations", fields: [buyerId], references: [id])
+  sellerId    String
+  seller      User      @relation("SellerNegotiations", fields: [sellerId], references: [id])
+  status      String    @default("ACTIVE")
+  finalPrice  Float?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  messages    NegotiationMessage[]
+  transaction Transaction?
+}
+
+model NegotiationMessage {
+  id              String      @id @default(cuid())
+  negotiationId   String
+  negotiation     Negotiation @relation(fields: [negotiationId], references: [id])
+  fromRole        String
+  messageType     String
+  price           Float
+  agentReasoning  String?
+  createdAt       DateTime    @default(now())
+}
+
+model Transaction {
+  id               String      @id @default(cuid())
+  negotiationId    String      @unique
+  negotiation      Negotiation @relation(fields: [negotiationId], references: [id])
+  buyerId          String
+  buyer            User        @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  sellerId         String
+  seller           User        @relation("SellerTransactions", fields: [sellerId], references: [id])
+  amount           Float
+  platformFee      Float
+  sellerPayout     Float
+  currency         String      @default("USD")
+  stripeSessionId  String?
+  status           String      @default("PENDING")
+  createdAt        DateTime    @default(now())
+  completedAt      DateTime?
+}
+
+model Rating {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  fromUserId String
+  score      Int
+  comment    String?
+  createdAt  DateTime @default(now())
+}
