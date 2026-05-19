@@ -1,6 +1,18 @@
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+const FAST_MODEL = "llama-3.1-8b-instant";
+
+async function chat(model: string, prompt: string): Promise<string> {
+  const response = await client.chat.completions.create({
+    model,
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.2,
+    max_tokens: 512,
+  });
+  return response.choices[0]?.message?.content ?? "";
+}
 
 export interface SearchIntent {
   keywords: string;
@@ -15,31 +27,27 @@ export async function parseSearchIntent(query: string): Promise<SearchIntent> {
 
 Query: "${query}"
 
-Return JSON:
+Return ONLY this JSON (no markdown):
 {
   "keywords": "key search terms as a string",
-  "category": "one of: Electronics, Furniture, Clothing, Toys & Kids, Tools, Appliances, Sports, Books, Home & Garden, Other, or null if unclear",
-  "maxPrice": number or null (extract budget if mentioned),
-  "condition": "one of: NEW, LIKE_NEW, GOOD, FAIR, POOR or null if not specified",
-  "summary": "1 sentence plain English summary of what the user wants"
-}
+  "category": "one of: Electronics, Furniture, Clothing, Toys & Kids, Tools, Appliances, Sports, Books, Home & Garden, Other — or null if unclear",
+  "maxPrice": number or null (extract dollar budget if mentioned, e.g. "under $300" → 300),
+  "condition": "one of: NEW, LIKE_NEW, GOOD, FAIR, POOR — or null if not specified",
+  "summary": "1 sentence plain English summary of exactly what the user is looking for"
+}`;
 
-Return ONLY valid JSON.`;
-
-  const response = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 256,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const text = response.content[0].type === "text" ? response.content[0].text : "";
+  const text = await chat(FAST_MODEL, prompt);
   const jsonMatch = text.match(/\{[\s\S]*\}/);
 
   if (!jsonMatch) {
     return { keywords: query, summary: `Searching for: ${query}` };
   }
 
-  return JSON.parse(jsonMatch[0]) as SearchIntent;
+  try {
+    return JSON.parse(jsonMatch[0]) as SearchIntent;
+  } catch {
+    return { keywords: query, summary: `Searching for: ${query}` };
+  }
 }
 
 export interface BuyerOfferStrategy {
@@ -57,52 +65,50 @@ export async function determineBuyerOffer(params: {
 }): Promise<BuyerOfferStrategy> {
   const { listingTitle, askingPrice, maxBudget, condition, sellerTrustScore, daysListed } = params;
 
-  const prompt = `You are a buyer agent on AgentBay marketplace making an opening offer on behalf of a buyer.
+  const prompt = `You are a buyer agent on AgentBay marketplace. Determine a smart opening offer.
 
 Item: "${listingTitle}"
 Asking price: $${askingPrice}
-Buyer's max budget: $${maxBudget}
+Buyer's maximum budget: $${maxBudget}
 Item condition: ${condition}
-Seller trust score: ${sellerTrustScore}/5.0
+Seller trust score: ${sellerTrustScore.toFixed(1)}/5.0
 Days listed: ${daysListed}
 
-Determine a smart opening offer that:
-- Is between 10-25% below asking price (room to negotiate)
-- Does not exceed the buyer's max budget
-- Is realistic enough that the seller will engage
-- Considers condition (worse condition = lower offer)
+Rules:
+- Opening offer should be 10-20% below asking price (leave negotiation room)
+- Never exceed the buyer's max budget of $${maxBudget}
+- Worse condition = lower opening offer
+- Long-listed items = slightly lower offer (motivated seller)
+- Must be a realistic offer the seller will engage with (not insultingly low)
 
-Return JSON:
+Return ONLY this JSON (no markdown):
 {
   "initialOffer": number,
-  "reasoning": "brief explanation for the buyer"
-}
+  "reasoning": "1-2 sentence explanation for the buyer"
+}`;
 
-Return ONLY valid JSON.`;
-
-  const response = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 256,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const text = response.content[0].type === "text" ? response.content[0].text : "";
+  const text = await chat(FAST_MODEL, prompt);
   const jsonMatch = text.match(/\{[\s\S]*\}/);
 
   if (!jsonMatch) {
     const offer = Math.min(askingPrice * 0.85, maxBudget);
     return {
       initialOffer: parseFloat(offer.toFixed(2)),
-      reasoning: "Opening at 15% below asking to leave room for negotiation.",
+      reasoning: "Opening 15% below asking to leave room for negotiation.",
     };
   }
 
-  const strategy = JSON.parse(jsonMatch[0]) as BuyerOfferStrategy;
-  // Never exceed budget
-  if (strategy.initialOffer > maxBudget) {
-    strategy.initialOffer = maxBudget;
+  try {
+    const strategy = JSON.parse(jsonMatch[0]) as BuyerOfferStrategy;
+    if (strategy.initialOffer > maxBudget) {
+      strategy.initialOffer = maxBudget;
+      strategy.reasoning += " (capped at your budget)";
+    }
+    return strategy;
+  } catch {
+    const offer = Math.min(askingPrice * 0.85, maxBudget);
+    return { initialOffer: parseFloat(offer.toFixed(2)), reasoning: "Opening below asking price." };
   }
-  return strategy;
 }
 
 export async function buyerCounterDecision(params: {
@@ -114,8 +120,18 @@ export async function buyerCounterDecision(params: {
 }): Promise<{ action: "ACCEPT" | "COUNTER" | "WALK_AWAY"; price?: number; reasoning: string }> {
   const { maxBudget, sellerCounter, lastBuyerOffer, round } = params;
 
-  if (sellerCounter <= maxBudget && round >= 2) {
-    return { action: "ACCEPT", reasoning: "Counter is within budget and we've negotiated fairly." };
+  // Simple rule-based logic — fast and predictable for counters
+  if (sellerCounter <= maxBudget) {
+    if (round >= 2) {
+      return { action: "ACCEPT", reasoning: "Counter is within budget. Accepting for a fair deal." };
+    }
+    // Split the difference on round 1
+    const split = parseFloat(((lastBuyerOffer + sellerCounter) / 2).toFixed(2));
+    return {
+      action: "COUNTER",
+      price: Math.min(split, maxBudget),
+      reasoning: "Splitting the difference toward a fair price.",
+    };
   }
 
   if (sellerCounter > maxBudget) {
@@ -124,16 +140,15 @@ export async function buyerCounterDecision(params: {
     }
     return {
       action: "COUNTER",
-      price: Math.min(maxBudget, lastBuyerOffer * 1.05),
-      reasoning: "Improving offer toward budget limit.",
+      price: maxBudget,
+      reasoning: "Moving to max budget — final offer.",
     };
   }
 
-  // Split the difference
   const counter = parseFloat(((lastBuyerOffer + sellerCounter) / 2).toFixed(2));
   return {
     action: "COUNTER",
     price: Math.min(counter, maxBudget),
-    reasoning: "Splitting the difference for a fair compromise.",
+    reasoning: "Meeting in the middle.",
   };
 }
