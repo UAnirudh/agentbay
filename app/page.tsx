@@ -19,7 +19,6 @@ export default async function LandingPage({
   const params = await searchParams;
   const ref = params.ref;
   const count = await getSignupCount();
-  const displayCount = Math.max(count, 1247);
 
   return (
     <div className="min-h-screen relative overflow-x-hidden">
@@ -95,7 +94,7 @@ export default async function LandingPage({
             ))}
           </div>
           <span>
-            <AnimatedCounter target={displayCount} /> people already waiting
+            <AnimatedCounter target={count} /> people already waiting
           </span>
           <span className="text-green-400 font-medium">·</span>
           <span className="text-slate-400">spots limited</span>
@@ -322,35 +321,25 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Early access benefits */}
       <section className="max-w-6xl mx-auto px-6 pb-24">
         <div className="text-center mb-12">
-          <h2 className="section-heading">What people are saying</h2>
+          <span className="text-cyan-400 text-sm font-semibold uppercase tracking-widest block mb-4">Early access</span>
+          <h2 className="section-heading">What top waitlist members get</h2>
+          <p className="text-slate-400">The highest referrers unlock these perks at launch.</p>
         </div>
         <div className="grid md:grid-cols-3 gap-4">
           {[
-            { name: "Sarah K.", role: "Parent of 3", quote: "I sold 40+ kids' items in two weeks without writing a single listing. The AI handled everything.", avatar: "S" },
-            { name: "Marcus T.", role: "College student", quote: "Found my textbooks for 30% less than Amazon. The agent negotiated and I just clicked confirm.", avatar: "M" },
-            { name: "Priya N.", role: "Freelance designer", quote: "Cleared out my home studio and made $2,400. Easiest money I've ever made from selling stuff.", avatar: "P" },
-          ].map((t) => (
-            <div key={t.name} className="card p-6">
-              <div className="flex gap-1 mb-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <svg key={i} className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
+            { icon: "⚡", title: "Day-one access", desc: "Top 100 referrers get in before anyone else. Be first when the agents go live.", color: "brand" },
+            { icon: "🎁", title: "Founder pricing", desc: "Early access members lock in a lifetime discount before public pricing is set.", color: "purple" },
+            { icon: "🏷️", title: "Founding member badge", desc: "Permanent badge on your profile marking you as one of the original AgentBay members.", color: "cyan" },
+          ].map((b) => (
+            <div key={b.title} className={`card p-7 group hover:border-${b.color}-500/30 transition-all`}>
+              <div className={`w-12 h-12 rounded-2xl bg-${b.color}-500/20 flex items-center justify-center mb-5 text-2xl`}>
+                {b.icon}
               </div>
-              <p className="text-slate-300 text-sm leading-relaxed mb-4 italic">"{t.quote}"</p>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                  {t.avatar}
-                </div>
-                <div>
-                  <p className="font-semibold text-white text-sm">{t.name}</p>
-                  <p className="text-slate-500 text-xs">{t.role}</p>
-                </div>
-              </div>
+              <h3 className="font-bold text-white mb-2">{b.title}</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">{b.desc}</p>
             </div>
           ))}
         </div>
@@ -415,7 +404,7 @@ export default async function LandingPage({
               <span className="gradient-text">marketplaces again?</span>
             </h2>
             <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto">
-              Join <AnimatedCounter target={displayCount} /> people waiting for the future of commerce.
+              Join <AnimatedCounter target={count} /> people waiting for the future of commerce.
             </p>
             <WaitlistSignup initialRef={ref} />
           </div>

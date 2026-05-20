@@ -55,18 +55,45 @@ function emailWrapper(content: string): string {
 
 export async function sendWelcomeEmail(to: string, name: string, referralCode: string, position: number) {
   const referralUrl = `${APP_URL}/?ref=${referralCode}`;
+  const firstName = name ? name.split(" ")[0] : "there";
+  const tweetText = encodeURIComponent(`I just joined the AgentBay waitlist — an AI that buys, sells, and negotiates for you. Join me: ${referralUrl}`);
+  const waText = encodeURIComponent(`I just joined the AgentBay waitlist — an AI commerce agent that handles buying, selling, and negotiating for you. Join here: ${referralUrl}`);
+
   const html = emailWrapper(`
-    <h1 style="font-size:28px;font-weight:800;margin:0 0 16px;">You're on the list! 🎉</h1>
-    <p style="color:#94A3B8;font-size:16px;line-height:1.6;margin:0 0 24px;">
-      Welcome to AgentBay, ${name || "friend"}. You're <strong style="color:#6366F1;">#${position}</strong> in line for early access to the AI commerce platform that handles buying, selling, and negotiating for you.
+    <h1 style="font-size:30px;font-weight:800;margin:0 0 8px;color:#F8FAFC;">Welcome to AgentBay, ${firstName}! 🎉</h1>
+    <p style="color:#94A3B8;font-size:16px;line-height:1.6;margin:0 0 28px;">
+      You're officially on the waitlist for the AI commerce platform that buys, sells, and negotiates for you — no browsing, no listing, no back-and-forth.
     </p>
-    <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:24px;margin:24px 0;">
-      <p style="margin:0 0 8px;font-size:13px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;">Your referral link</p>
-      <p style="margin:0 0 16px;font-size:18px;font-weight:700;color:#6366F1;word-break:break-all;">${referralUrl}</p>
-      <p style="margin:0;font-size:14px;color:#94A3B8;">Each friend you refer moves you <strong style="color:#F8FAFC;">10 spots</strong> up the waitlist.</p>
+
+    <div style="background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(168,85,247,0.1));border:1px solid rgba(99,102,241,0.4);border-radius:16px;padding:28px;margin:0 0 28px;text-align:center;">
+      <p style="margin:0 0 4px;font-size:13px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;">Your current position</p>
+      <div style="font-size:64px;font-weight:900;background:linear-gradient(135deg,#6366F1,#A855F7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;margin:8px 0;">#${position}</div>
+      <p style="margin:0;font-size:14px;color:#94A3B8;">in the waitlist — refer friends to climb higher</p>
     </div>
-    <a href="${referralUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366F1,#A855F7);color:white;font-weight:700;font-size:16px;padding:14px 28px;border-radius:10px;text-decoration:none;">Share Your Link →</a>
-    <p style="margin:24px 0 0;font-size:14px;color:#64748B;">The more friends you invite, the faster you move up. Top referrers get priority access when we launch.</p>
+
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:24px;margin:0 0 28px;">
+      <p style="margin:0 0 10px;font-size:13px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Your unique referral link</p>
+      <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:14px 16px;margin:0 0 14px;word-break:break-all;">
+        <a href="${referralUrl}" style="color:#818CF8;font-size:15px;font-weight:600;text-decoration:none;">${referralUrl}</a>
+      </div>
+      <p style="margin:0;font-size:14px;color:#94A3B8;">Every friend who signs up with your link moves you <strong style="color:#F8FAFC;">10 spots up</strong> the waitlist. Top 100 referrers get early access first.</p>
+    </div>
+
+    <p style="margin:0 0 16px;font-size:14px;font-weight:600;color:#F8FAFC;">Share now and start climbing:</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <a href="https://twitter.com/intent/tweet?text=${tweetText}" style="display:inline-block;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#F8FAFC;font-weight:600;font-size:14px;padding:12px 20px;border-radius:10px;text-decoration:none;">𝕏 Share on X</a>
+      <a href="https://wa.me/?text=${waText}" style="display:inline-block;background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.3);color:#25D366;font-weight:600;font-size:14px;padding:12px 20px;border-radius:10px;text-decoration:none;">WhatsApp</a>
+      <a href="${APP_URL}/waitlist" style="display:inline-block;background:linear-gradient(135deg,#6366F1,#A855F7);color:white;font-weight:600;font-size:14px;padding:12px 20px;border-radius:10px;text-decoration:none;">View your dashboard →</a>
+    </div>
+
+    <div style="margin:32px 0 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;">
+      <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#F8FAFC;text-transform:uppercase;letter-spacing:0.06em;">What AgentBay does for you</p>
+      <div style="display:grid;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#94A3B8;"><span style="color:#6366F1;font-weight:700;">→</span> Finds the best deals across every marketplace</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#94A3B8;"><span style="color:#A855F7;font-weight:700;">→</span> Writes and posts listings for things you sell</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#94A3B8;"><span style="color:#06B6D4;font-weight:700;">→</span> Negotiates deals 24/7 without emotion</div>
+      </div>
+    </div>
   `);
 
   return sendEmail({ to, subject: `You're #${position} on the AgentBay waitlist 🚀`, html, type: "welcome" });
