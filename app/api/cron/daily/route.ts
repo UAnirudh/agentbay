@@ -8,9 +8,12 @@ import { eq, desc } from "drizzle-orm";
 import { generateId } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET || "cron-secret-change-in-production";
-  if (authHeader !== `Bearer ${cronSecret}`) return new NextResponse(null, { status: 401 });
+  const authHeader = req.headers.get("authorization");
+  const querySecret = req.nextUrl.searchParams.get("secret");
+  if (authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
+    return new NextResponse(null, { status: 401 });
+  }
 
   const allUsers = db.select().from(users)
     .where(eq(users.isAdmin, false))
