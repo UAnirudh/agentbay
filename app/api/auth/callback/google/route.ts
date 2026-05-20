@@ -5,10 +5,10 @@ import { eq, or } from "drizzle-orm";
 import { signToken, isAdminEmail, COOKIE_NAME } from "@/lib/auth";
 import { generateUniqueReferralCode, creditReferral, getQueuePosition } from "@/lib/referral";
 import { sendWelcomeEmail } from "@/lib/email";
-import { generateId } from "@/lib/utils";
+import { generateId, getAppUrl } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
   const { searchParams } = req.nextUrl;
   const code = searchParams.get("code");
   const stateParam = searchParams.get("state");

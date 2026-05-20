@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { getAppUrl } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl;
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
   const redirectUri = `${appUrl}/api/auth/callback/google`;
 
   const params = new URLSearchParams({

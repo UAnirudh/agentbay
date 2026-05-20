@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AgentBay — Your AI Commerce Agent",
   description: "The AI-native marketplace where your personal agent buys, sells, negotiates, and handles everything. Stop browsing. Start delegating.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL((() => { const u = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"; return u.startsWith("http") ? u : `https://${u}`; })()),
   openGraph: {
     title: "AgentBay — Your AI Commerce Agent",
     description: "Your personal AI agent handles buying, selling, and negotiating. Join the waitlist.",

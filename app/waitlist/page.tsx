@@ -6,6 +6,7 @@ import { getQueuePosition, getTotalSignups, getLeaderboard } from "@/lib/referra
 import { db } from "@/lib/db";
 import { users, referralEvents } from "@/lib/schema";
 import { eq, desc } from "drizzle-orm";
+import { getAppUrl } from "@/lib/utils";
 import WaitlistDashboard from "./WaitlistDashboard";
 
 export default async function WaitlistPage() {
@@ -27,7 +28,7 @@ export default async function WaitlistPage() {
     getLeaderboard(10),
   ]);
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
   const referralUrl = `${appUrl}/?ref=${user.referralCode}`;
 
   const leaderboardWithRanks = leaderboard.map((u, i) => ({

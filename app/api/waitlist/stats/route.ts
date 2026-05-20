@@ -4,6 +4,7 @@ import { getQueuePosition, getTotalSignups } from "@/lib/referral";
 import { db } from "@/lib/db";
 import { users, referralEvents } from "@/lib/schema";
 import { eq, desc } from "drizzle-orm";
+import { getAppUrl } from "@/lib/utils";
 
 export async function GET() {
   const session = await getSession();
@@ -23,7 +24,7 @@ export async function GET() {
     getTotalSignups(),
   ]);
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
   const referralUrl = `${appUrl}/?ref=${user.referralCode}`;
 
   const milestones = [

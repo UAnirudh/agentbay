@@ -5,7 +5,8 @@ const resend = process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.include
   : null;
 
 const FROM = process.env.EMAIL_FROM || "AgentBay <hello@agentbay.ai>";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const _rawUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const APP_URL = _rawUrl.startsWith("http") ? _rawUrl : `https://${_rawUrl}`;
 
 interface SendOptions {
   to: string;

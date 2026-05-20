@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { COOKIE_NAME } from "@/lib/auth";
+import { getAppUrl } from "@/lib/utils";
 
 export async function GET() {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
   const response = NextResponse.redirect(appUrl + "/");
   response.cookies.delete(COOKIE_NAME);
   response.cookies.delete("agentbay_token");
