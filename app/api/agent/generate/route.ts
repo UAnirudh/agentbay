@@ -1,22 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSessionFromRequest } from "@/lib/auth";
-import { generateListing } from "@/lib/agents/seller-agent";
-
-export async function POST(req: NextRequest) {
-  const session = await getSessionFromRequest(req);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  try {
-    const { description, photoUrl } = await req.json();
-
-    if (!description && !photoUrl) {
-      return NextResponse.json({ error: "Description or photo URL required" }, { status: 400 });
-    }
-
-    const listing = await generateListing(description || "Item shown in photo", photoUrl);
-    return NextResponse.json({ listing });
-  } catch (error) {
-    console.error("Agent generate error:", error);
-    return NextResponse.json({ error: "AI generation failed. Please try again." }, { status: 500 });
-  }
-}
+import { NextResponse } from "next/server";
+export async function GET() { return new NextResponse(null, { status: 404 }); }
+export async function POST() { return new NextResponse(null, { status: 404 }); }
+export async function PUT() { return new NextResponse(null, { status: 404 }); }
+export async function PATCH() { return new NextResponse(null, { status: 404 }); }
+export async function DELETE() { return new NextResponse(null, { status: 404 }); }

@@ -1,11 +1,18 @@
-import { PrismaClient } from "@prisma/client";
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import * as schema from "./schema";
+import path from "path";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const DB_PATH = path.resolve(process.cwd(), "prisma", "dev.db");
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({ log: process.env.NODE_ENV === "development" ? ["error"] : [] });
+const globalForDb = globalThis as unknown as { sqlite: Database.Database };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+const sqlite = globalForDb.sqlite || new Database(DB_PATH);
 
-export default prisma;
+if (process.env.NODE_ENV !== "production") {
+  globalForDb.sqlite = sqlite;
+  sqlite.pragma("journal_mode = WAL");
+}
+
+export const db = drizzle(sqlite, { schema });
+export default db;
