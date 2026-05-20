@@ -10,9 +10,11 @@ const PUBLIC_PREFIXES = ["/api/auth/", "/api/leaderboard", "/api/waitlist/join",
 const WAITLIST_ROUTES = ["/waitlist"];
 const WAITLIST_API = ["/api/waitlist/stats", "/api/waitlist/referral"];
 
-// Routes that should return 404 for non-admins (existing product routes)
+// Routes that should return 404 for non-admins (product routes + test workspace)
 const INTERNAL_PREFIXES = [
   "/dashboard",
+  "/test",
+  "/api/test",
   "/api/agent",
   "/api/listings",
   "/api/negotiations",

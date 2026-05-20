@@ -18,6 +18,9 @@ build/
 # prisma
 prisma/*.db
 prisma/*.db-journal
+prisma/*.db-shm
+prisma/*.db-wal
+test-prisma.mjs
 
 # uploads
 public/uploads/

@@ -63,7 +63,68 @@ export const rateLimits = sqliteTable("rate_limits", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
 });
 
+export const listings = sqliteTable("listings", {
+  id: text("id").primaryKey(),
+  sellerId: text("seller_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(),
+  condition: text("condition").notNull().default("used"),
+  priceCents: integer("price_cents").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  imageUrl: text("image_url"),
+  status: text("status").notNull().default("active"),
+  source: text("source").notNull().default("agentbay"),
+  externalUrl: text("external_url"),
+  externalSource: text("external_source"),
+  views: integer("views").notNull().default(0),
+  aiGenerated: integer("ai_generated", { mode: "boolean" }).notNull().default(false),
+  tags: text("tags"),
+  location: text("location"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
+});
+
+export const agentSessions = sqliteTable("agent_sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  mode: text("mode").notNull(),
+  query: text("query").notNull(),
+  status: text("status").notNull().default("active"),
+  resultData: text("result_data"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
+});
+
+export const agentMessages = sqliteTable("agent_messages", {
+  id: text("id").primaryKey(),
+  sessionId: text("session_id").notNull().references(() => agentSessions.id),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  metadata: text("metadata"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
+});
+
+export const negotiations = sqliteTable("negotiations", {
+  id: text("id").primaryKey(),
+  listingId: text("listing_id").notNull().references(() => listings.id),
+  buyerId: text("buyer_id").notNull().references(() => users.id),
+  sellerId: text("seller_id").notNull().references(() => users.id),
+  initialPriceCents: integer("initial_price_cents").notNull(),
+  currentOfferCents: integer("current_offer_cents").notNull(),
+  finalPriceCents: integer("final_price_cents"),
+  status: text("status").notNull().default("active"),
+  lastTurn: text("last_turn").notNull().default("buyer"),
+  history: text("history").notNull().default("[]"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type ReferralEvent = typeof referralEvents.$inferSelect;
 export type EmailLog = typeof emailLogs.$inferSelect;
+export type Listing = typeof listings.$inferSelect;
+export type NewListing = typeof listings.$inferInsert;
+export type AgentSession = typeof agentSessions.$inferSelect;
+export type AgentMessage = typeof agentMessages.$inferSelect;
+export type Negotiation = typeof negotiations.$inferSelect;

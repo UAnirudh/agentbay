@@ -68,6 +68,69 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   created_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
 );
 
+CREATE TABLE IF NOT EXISTS listings (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL REFERENCES users(id),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  category TEXT NOT NULL,
+  condition TEXT NOT NULL DEFAULT 'used',
+  price_cents INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  image_url TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  source TEXT NOT NULL DEFAULT 'agentbay',
+  external_url TEXT,
+  external_source TEXT,
+  views INTEGER NOT NULL DEFAULT 0,
+  ai_generated INTEGER NOT NULL DEFAULT 0,
+  tags TEXT,
+  location TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
+);
+
+CREATE TABLE IF NOT EXISTS agent_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  mode TEXT NOT NULL,
+  query TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  result_data TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
+);
+
+CREATE TABLE IF NOT EXISTS agent_messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES agent_sessions(id),
+  role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  metadata TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
+);
+
+CREATE TABLE IF NOT EXISTS negotiations (
+  id TEXT PRIMARY KEY,
+  listing_id TEXT NOT NULL REFERENCES listings(id),
+  buyer_id TEXT NOT NULL REFERENCES users(id),
+  seller_id TEXT NOT NULL REFERENCES users(id),
+  initial_price_cents INTEGER NOT NULL,
+  current_offer_cents INTEGER NOT NULL,
+  final_price_cents INTEGER,
+  status TEXT NOT NULL DEFAULT 'active',
+  last_turn TEXT NOT NULL DEFAULT 'buyer',
+  history TEXT NOT NULL DEFAULT '[]',
+  created_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller_id);
+CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(status);
+CREATE INDEX IF NOT EXISTS idx_listings_category ON listings(category);
+CREATE INDEX IF NOT EXISTS idx_agent_sessions_user ON agent_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_agent_messages_session ON agent_messages(session_id);
+CREATE INDEX IF NOT EXISTS idx_negotiations_buyer ON negotiations(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_negotiations_listing ON negotiations(listing_id);
 CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_queue_score ON users(queue_score DESC, created_at ASC);
