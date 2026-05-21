@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { listings } from "@/lib/schema";
 import { generateId } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 const groqKey = process.env.GROQ_API_KEY;
 const groq = groqKey && !groqKey.includes("placeholder") ? new Groq({ apiKey: groqKey }) : null;
 const MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
@@ -95,23 +97,9 @@ export async function POST(req: NextRequest) {
   } else {
     const lower = message.toLowerCase();
     if (/(buy|find|looking|search|need|want)/.test(lower)) {
-      decision = {
-        intent: "search",
-        reply: `Searching across all marketplaces for "${message}"...`,
-        mood: "searching",
-        search_query: message,
-        listing_description: null,
-        navigate_to: null,
-      };
+      decision = { intent: "search", reply: `Searching across all marketplaces for "${message}"...`, mood: "searching", search_query: message, listing_description: null, navigate_to: null };
     } else if (/(sell|listing|list|have)/.test(lower)) {
-      decision = {
-        intent: "list",
-        reply: "Got it. Let me write an optimized listing for that.",
-        mood: "thinking",
-        search_query: null,
-        listing_description: message,
-        navigate_to: null,
-      };
+      decision = { intent: "list", reply: "Got it. Let me write an optimized listing for that.", mood: "thinking", search_query: null, listing_description: message, navigate_to: null };
     } else if (/(marketplace|browse)/.test(lower)) {
       decision = { intent: "navigate", reply: "Taking you to the marketplace.", mood: "speaking", search_query: null, listing_description: null, navigate_to: "/test/marketplace" };
     } else if (/(my listings|my shop)/.test(lower)) {
@@ -127,7 +115,7 @@ export async function POST(req: NextRequest) {
   } else if (decision.intent === "list" && decision.listing_description) {
     const draft = await generateListing({ description: decision.listing_description });
     const id = generateId();
-    db.insert(listings).values({
+    await db.insert(listings).values({
       id,
       sellerId: session.userId,
       title: draft.title,
@@ -139,7 +127,7 @@ export async function POST(req: NextRequest) {
       source: "agentbay",
       aiGenerated: true,
       tags: JSON.stringify(draft.tags),
-    }).run();
+    });
     decision.draft = draft;
     decision.listingId = id;
   }

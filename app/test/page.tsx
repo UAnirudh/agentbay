@@ -12,11 +12,17 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default async function TestHome() {
-  const [{ totalListings }] = db.select({ totalListings: count() }).from(listings).where(eq(listings.status, "active")).all();
-  const [{ totalNegs }] = db.select({ totalNegs: count() }).from(negotiations).all();
-  const [{ totalSearches }] = db.select({ totalSearches: count() }).from(agentSessions).where(eq(agentSessions.mode, "buy")).all();
-
-  const recent = db.select().from(listings).where(eq(listings.status, "active")).orderBy(desc(listings.createdAt)).limit(4).all();
+  const [
+    [{ totalListings }],
+    [{ totalNegs }],
+    [{ totalSearches }],
+    recent,
+  ] = await Promise.all([
+    db.select({ totalListings: count() }).from(listings).where(eq(listings.status, "active")),
+    db.select({ totalNegs: count() }).from(negotiations),
+    db.select({ totalSearches: count() }).from(agentSessions).where(eq(agentSessions.mode, "buy")),
+    db.select().from(listings).where(eq(listings.status, "active")).orderBy(desc(listings.createdAt)).limit(4),
+  ]);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
@@ -61,11 +67,7 @@ export default async function TestHome() {
           { href: "/test/marketplace", icon: "🏪", title: "Browse", desc: "All AgentBay listings", color: "cyan" },
           { href: "/test/negotiations", icon: "🤝", title: "Negotiate", desc: "Watch your deals close", color: "amber" },
         ].map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            className="card-hover p-6 group relative overflow-hidden"
-          >
+          <Link key={t.href} href={t.href} className="card-hover p-6 group relative overflow-hidden">
             <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full bg-${t.color}-500/10 blur-2xl group-hover:bg-${t.color}-500/20 transition-all`} />
             <div className="relative">
               <div className="text-4xl mb-3">{t.icon}</div>

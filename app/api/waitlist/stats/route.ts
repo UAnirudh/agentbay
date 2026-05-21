@@ -6,18 +6,19 @@ import { users, referralEvents } from "@/lib/schema";
 import { eq, desc } from "drizzle-orm";
 import { getAppUrl } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = db.select().from(users).where(eq(users.id, session.userId)).get();
+  const user = (await db.select().from(users).where(eq(users.id, session.userId)))[0];
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const recentReferrals = db.select().from(referralEvents)
+  const recentReferrals = await db.select().from(referralEvents)
     .where(eq(referralEvents.referrerId, user.id))
     .orderBy(desc(referralEvents.createdAt))
-    .limit(10)
-    .all();
+    .limit(10);
 
   const [position, total] = await Promise.all([
     getQueuePosition(user.id),

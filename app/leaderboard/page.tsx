@@ -19,8 +19,7 @@ async function getFullLeaderboard() {
     createdAt: users.createdAt,
   }).from(users)
     .orderBy(desc(users.queueScore), asc(users.createdAt))
-    .limit(100)
-    .all();
+    .limit(100);
 }
 
 export default async function LeaderboardPage() {
@@ -37,7 +36,6 @@ export default async function LeaderboardPage() {
         <div className="absolute inset-0 grid-bg" />
       </div>
 
-      {/* Nav */}
       <nav className="sticky top-0 z-50 glass border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
@@ -53,7 +51,6 @@ export default async function LeaderboardPage() {
       </nav>
 
       <div className="relative max-w-4xl mx-auto px-6 py-16">
-        {/* Header */}
         <div className="text-center mb-12">
           <span className="text-purple-400 text-sm font-semibold uppercase tracking-widest block mb-4">Live Rankings</span>
           <h1 className="text-4xl md:text-5xl font-black text-white mb-4">Waitlist Leaderboard</h1>
@@ -66,7 +63,6 @@ export default async function LeaderboardPage() {
           </div>
         </div>
 
-        {/* Top 3 podium */}
         {allUsers.length >= 3 && (
           <div className="grid grid-cols-3 gap-4 mb-8">
             {[allUsers[1], allUsers[0], allUsers[2]].map((user, displayIdx) => {
@@ -77,7 +73,6 @@ export default async function LeaderboardPage() {
                 "from-brand-500/30 to-purple-500/20 border-brand-500/30",
                 "from-amber-500/20 to-amber-600/10 border-amber-500/30",
               ];
-
               return (
                 <div key={user.id} className={`card ${gradients[displayIdx]} border flex flex-col items-center justify-end p-4 ${heights[displayIdx]} relative overflow-hidden`}>
                   <div className="absolute top-2 left-2 text-xl">{medals[actualIdx]}</div>
@@ -94,7 +89,6 @@ export default async function LeaderboardPage() {
           </div>
         )}
 
-        {/* Full leaderboard */}
         <div className="card overflow-hidden">
           <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <span className="text-sm font-semibold text-slate-400">Top 100 Referrers</span>
@@ -108,10 +102,7 @@ export default async function LeaderboardPage() {
           ) : (
             <div className="divide-y divide-white/[0.04]">
               {allUsers.map((user, i) => (
-                <div
-                  key={user.id}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.02] transition-all"
-                >
+                <div key={user.id} className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.02] transition-all">
                   <div className="w-10 text-center shrink-0">
                     {i < 3 ? (
                       <span className="text-lg">{medals[i]}</span>
@@ -135,16 +126,10 @@ export default async function LeaderboardPage() {
                       <p className="text-xs text-slate-600">score</p>
                     </div>
                     {i < 3 && (
-                      <div>
-                        <span className="badge bg-green-500/20 text-green-400 border border-green-500/30 text-xs">
-                          Top {i + 1}
-                        </span>
-                      </div>
+                      <span className="badge bg-green-500/20 text-green-400 border border-green-500/30 text-xs">Top {i + 1}</span>
                     )}
                     {i < 10 && i >= 3 && (
-                      <span className="badge bg-brand-500/20 text-brand-400 border border-brand-500/30 text-xs hidden sm:inline-flex">
-                        Top 10
-                      </span>
+                      <span className="badge bg-brand-500/20 text-brand-400 border border-brand-500/30 text-xs hidden sm:inline-flex">Top 10</span>
                     )}
                   </div>
                 </div>
@@ -153,7 +138,6 @@ export default async function LeaderboardPage() {
           )}
         </div>
 
-        {/* CTA */}
         <div className="mt-12 text-center">
           <p className="text-slate-400 mb-6 text-lg">
             Not on the list? <strong className="text-white">Join now</strong> and start climbing.

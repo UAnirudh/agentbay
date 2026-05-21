@@ -4,12 +4,14 @@ import { users } from "@/lib/schema";
 import { desc, asc, count } from "drizzle-orm";
 import { anonymizeEmail } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const url = req.nextUrl;
   const limitParam = url.searchParams.get("limit");
   const limit = Math.min(parseInt(limitParam || "50"), 100);
 
-  const all = db.select({
+  const all = await db.select({
     id: users.id,
     email: users.email,
     name: users.name,
@@ -18,8 +20,7 @@ export async function GET(req: NextRequest) {
     createdAt: users.createdAt,
   }).from(users)
     .orderBy(desc(users.queueScore), asc(users.createdAt))
-    .limit(limit)
-    .all();
+    .limit(limit);
 
   const leaderboard = all.map((u, i) => ({
     id: u.id,
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
     joinedAt: u.createdAt,
   }));
 
-  const [{ total }] = db.select({ total: count() }).from(users).all();
+  const [{ total }] = await db.select({ total: count() }).from(users);
 
   return NextResponse.json({ leaderboard, total }, {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },

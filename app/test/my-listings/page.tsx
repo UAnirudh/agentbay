@@ -8,10 +8,9 @@ export const dynamic = "force-dynamic";
 
 export default async function MyListingsPage() {
   const session = await getSession();
-  const items = db.select().from(listings)
+  const items = await db.select().from(listings)
     .where(and(eq(listings.sellerId, session!.userId), ne(listings.status, "deleted")))
-    .orderBy(desc(listings.createdAt))
-    .all();
+    .orderBy(desc(listings.createdAt));
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
@@ -44,7 +43,7 @@ export default async function MyListingsPage() {
                     {item.aiGenerated && <span className="text-xs text-purple-400">✨ AI</span>}
                   </div>
                   <h3 className="font-bold text-white truncate group-hover:text-purple-300 transition">{item.title}</h3>
-                  <p className="text-xs text-slate-500 mt-1">{item.views} views · listed {new Date(item.createdAt as Date).toLocaleDateString()}</p>
+                  <p className="text-xs text-slate-500 mt-1">{item.views} views · listed {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}</p>
                 </div>
                 <p className="text-2xl font-black text-white shrink-0">${(item.priceCents / 100).toFixed(0)}</p>
               </div>

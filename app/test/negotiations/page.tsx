@@ -8,15 +8,14 @@ export const dynamic = "force-dynamic";
 
 export default async function NegotiationsPage() {
   const session = await getSession();
-  const rows = db.select().from(negotiations)
+  const rows = await db.select().from(negotiations)
     .where(or(eq(negotiations.buyerId, session!.userId), eq(negotiations.sellerId, session!.userId)))
-    .orderBy(desc(negotiations.updatedAt))
-    .all();
+    .orderBy(desc(negotiations.updatedAt));
 
-  const enriched = rows.map((n) => {
-    const l = db.select().from(listings).where(eq(listings.id, n.listingId)).get();
+  const enriched = await Promise.all(rows.map(async (n) => {
+    const l = (await db.select().from(listings).where(eq(listings.id, n.listingId)))[0];
     return { ...n, listing: l, history: JSON.parse(n.history) as { role: string; offerCents: number; message: string }[] };
-  });
+  }));
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">

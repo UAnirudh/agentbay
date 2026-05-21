@@ -4,10 +4,12 @@ import { db } from "@/lib/db";
 import { systemJobs } from "@/lib/schema";
 import { tickDueJobs } from "@/lib/jobs";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const session = await getSession();
   if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
-  const rows = db.select().from(systemJobs).all();
+  const rows = await db.select().from(systemJobs);
   return NextResponse.json({ jobs: rows });
 }
 
@@ -16,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
   const { force } = await req.json().catch(() => ({ force: false }));
   if (force) {
-    db.delete(systemJobs).run();
+    await db.delete(systemJobs);
   }
   const result = await tickDueJobs();
   return NextResponse.json(result);

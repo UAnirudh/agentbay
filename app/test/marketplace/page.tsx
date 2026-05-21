@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { listings, users } from "@/lib/schema";
-import { eq, desc, like, and, or } from "drizzle-orm";
+import { eq, desc, like, and, or, inArray } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -38,22 +38,19 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
     where.push(eq(listings.category, cat));
   }
 
-  const items = db.select().from(listings)
+  const items = await db.select().from(listings)
     .where(and(...where))
     .orderBy(desc(listings.createdAt))
-    .limit(60)
-    .all();
+    .limit(60);
 
-  // Get seller names for each listing
   const sellerIds = Array.from(new Set(items.map((i) => i.sellerId)));
   const sellers = sellerIds.length > 0
-    ? db.select({ id: users.id, name: users.name, email: users.email }).from(users)
-        .where(or(...sellerIds.map((id) => eq(users.id, id))))
-        .all()
+    ? await db.select({ id: users.id, name: users.name, email: users.email }).from(users)
+        .where(inArray(users.id, sellerIds))
     : [];
   const sellerMap = new Map(sellers.map((s) => [s.id, s.name || s.email.split("@")[0]]));
 
-  const allActive = db.select({ category: listings.category }).from(listings).where(eq(listings.status, "active")).all();
+  const allActive = await db.select({ category: listings.category }).from(listings).where(eq(listings.status, "active"));
   const categoryCounts = new Map<string, number>();
   for (const a of allActive) categoryCounts.set(a.category, (categoryCounts.get(a.category) || 0) + 1);
   const categories = Array.from(categoryCounts.entries()).sort((a, b) => b[1] - a[1]);

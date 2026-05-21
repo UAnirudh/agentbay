@@ -18,50 +18,30 @@ export default async function AdminPage() {
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
-  const totalUsers = await getTotalSignups();
-
-  const [{ usersToday }] = db.select({ usersToday: count() }).from(users)
-    .where(gte(users.createdAt, new Date(oneDayAgo))).all();
-
-  const [{ usersThisWeek }] = db.select({ usersThisWeek: count() }).from(users)
-    .where(gte(users.createdAt, new Date(sevenDaysAgo))).all();
-
-  const [{ totalReferrals }] = db.select({ totalReferrals: count() }).from(referralEvents).all();
-
-  const [{ referralsToday }] = db.select({ referralsToday: count() }).from(referralEvents)
-    .where(gte(referralEvents.createdAt, new Date(oneDayAgo))).all();
-
-  const topReferrers = db.select({
-    id: users.id,
-    email: users.email,
-    name: users.name,
-    referralCount: users.referralCount,
-    isApproved: users.isApproved,
-    createdAt: users.createdAt,
-  }).from(users)
-    .orderBy(desc(users.referralCount))
-    .limit(10)
-    .all();
-
-  const recentSignups = db.select({
-    id: users.id,
-    email: users.email,
-    name: users.name,
-    referralCount: users.referralCount,
-    isApproved: users.isApproved,
-    createdAt: users.createdAt,
-  }).from(users)
-    .orderBy(desc(users.createdAt))
-    .limit(20)
-    .all();
+  const [
+    totalUsers,
+    [{ usersToday }],
+    [{ usersThisWeek }],
+    [{ totalReferrals }],
+    [{ referralsToday }],
+    topReferrers,
+    recentSignups,
+  ] = await Promise.all([
+    getTotalSignups(),
+    db.select({ usersToday: count() }).from(users).where(gte(users.createdAt, new Date(oneDayAgo))),
+    db.select({ usersThisWeek: count() }).from(users).where(gte(users.createdAt, new Date(sevenDaysAgo))),
+    db.select({ totalReferrals: count() }).from(referralEvents),
+    db.select({ referralsToday: count() }).from(referralEvents).where(gte(referralEvents.createdAt, new Date(oneDayAgo))),
+    db.select({ id: users.id, email: users.email, name: users.name, referralCount: users.referralCount, isApproved: users.isApproved, createdAt: users.createdAt })
+      .from(users).orderBy(desc(users.referralCount)).limit(10),
+    db.select({ id: users.id, email: users.email, name: users.name, referralCount: users.referralCount, isApproved: users.isApproved, createdAt: users.createdAt })
+      .from(users).orderBy(desc(users.createdAt)).limit(20),
+  ]);
 
   const conversionRate = totalUsers > 0 ? ((totalReferrals / totalUsers) * 100).toFixed(1) : "0";
   const viralCoefficient = totalUsers > 0 ? (totalReferrals / totalUsers).toFixed(2) : "0";
 
-  const toIso = (v: Date | number | null) => {
-    if (!v) return new Date().toISOString();
-    return v instanceof Date ? v.toISOString() : new Date(v).toISOString();
-  };
+  const toIso = (v: Date | null) => v ? v.toISOString() : new Date().toISOString();
 
   return (
     <AdminDashboard

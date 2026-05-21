@@ -6,6 +6,8 @@ import { getQueuePosition, getTotalSignups } from "@/lib/referral";
 import { eq, desc } from "drizzle-orm";
 import { generateId } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET || "cron-secret-change-in-production";
   const authHeader = req.headers.get("authorization");
@@ -15,12 +17,7 @@ export async function GET(req: NextRequest) {
   }
 
   const [allUsers, totalSignups] = await Promise.all([
-    Promise.resolve(
-      db.select().from(users)
-        .where(eq(users.isAdmin, false))
-        .orderBy(desc(users.queueScore))
-        .all()
-    ),
+    db.select().from(users).where(eq(users.isAdmin, false)).orderBy(desc(users.queueScore)),
     getTotalSignups(),
   ]);
 
@@ -30,10 +27,10 @@ export async function GET(req: NextRequest) {
     referralCount: u.referralCount,
   }));
 
-  db.insert(leaderboardSnapshots).values({
+  await db.insert(leaderboardSnapshots).values({
     id: generateId(),
     snapshotData: JSON.stringify(snapshot),
-  }).run();
+  });
 
   let sent = 0;
   let failed = 0;
@@ -42,21 +39,15 @@ export async function GET(req: NextRequest) {
     try {
       const position = await getQueuePosition(user.id);
       const success = await sendWeeklySummaryEmail(
-        user.email,
-        user.name || "",
-        position,
-        user.referralCount,
-        totalSignups,
-        user.referralCode
+        user.email, user.name || "", position, user.referralCount, totalSignups, user.referralCode
       );
-
       if (success) {
-        db.insert(emailLogs).values({
+        await db.insert(emailLogs).values({
           id: generateId(),
           userId: user.id,
           emailType: "weekly_summary",
           subject: `Weekly AgentBay update — you're #${position}`,
-        }).run();
+        });
         sent++;
       } else {
         failed++;

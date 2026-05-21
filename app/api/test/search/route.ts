@@ -6,6 +6,8 @@ import { searchWebForDeals, type WebDeal } from "@/lib/agent";
 import { generateId } from "@/lib/utils";
 import { eq, like, or, and } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
@@ -16,30 +18,29 @@ export async function POST(req: NextRequest) {
   }
 
   const sessionId = generateId();
-  db.insert(agentSessions).values({
+  await db.insert(agentSessions).values({
     id: sessionId,
     userId: session.userId,
     mode: "buy",
     query,
     status: "active",
-  }).run();
+  });
 
-  db.insert(agentMessages).values({
+  await db.insert(agentMessages).values({
     id: generateId(),
     sessionId,
     role: "user",
     content: query,
-  }).run();
+  });
 
   const tokens = query.toLowerCase().split(/\s+/).filter((t: string) => t.length > 2);
   const internalRows = tokens.length > 0
-    ? db.select().from(listings)
+    ? await db.select().from(listings)
         .where(and(
           eq(listings.status, "active"),
           or(...tokens.map((t: string) => or(like(listings.title, `%${t}%`), like(listings.description, `%${t}%`))))
         ))
         .limit(5)
-        .all()
     : [];
 
   const internalDeals: WebDeal[] = internalRows.map((l) => ({
@@ -59,18 +60,18 @@ export async function POST(req: NextRequest) {
   const webDeals = await searchWebForDeals(query, Math.max(5, (maxResults || 8) - internalDeals.length));
   const all = [...internalDeals, ...webDeals].sort((a, b) => b.matchScore - a.matchScore);
 
-  db.insert(agentMessages).values({
+  await db.insert(agentMessages).values({
     id: generateId(),
     sessionId,
     role: "agent",
     content: `Found ${all.length} matches across ${new Set(all.map((d) => d.source)).size} sources.`,
     metadata: JSON.stringify({ resultCount: all.length }),
-  }).run();
+  });
 
-  db.update(agentSessions).set({
+  await db.update(agentSessions).set({
     resultData: JSON.stringify(all),
     status: "complete",
-  }).where(eq(agentSessions.id, sessionId)).run();
+  }).where(eq(agentSessions.id, sessionId));
 
   return NextResponse.json({ sessionId, results: all });
 }

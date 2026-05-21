@@ -13,14 +13,13 @@ export default async function WaitlistPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const user = db.select().from(users).where(eq(users.id, session.userId)).get();
+  const user = (await db.select().from(users).where(eq(users.id, session.userId)))[0];
   if (!user) redirect("/login");
 
-  const recentReferrals = db.select().from(referralEvents)
+  const recentReferrals = await db.select().from(referralEvents)
     .where(eq(referralEvents.referrerId, user.id))
     .orderBy(desc(referralEvents.createdAt))
-    .limit(5)
-    .all();
+    .limit(5);
 
   const [position, total, leaderboard] = await Promise.all([
     getQueuePosition(user.id),
@@ -46,25 +45,19 @@ export default async function WaitlistPage() {
         image: user.image,
         referralCode: user.referralCode,
         referralCount: user.referralCount,
-        createdAt: user.createdAt instanceof Date
-          ? user.createdAt.toISOString()
-          : new Date(user.createdAt).toISOString(),
+        createdAt: user.createdAt ? user.createdAt.toISOString() : new Date().toISOString(),
       }}
       position={position}
       total={total}
       referralUrl={referralUrl}
       leaderboard={leaderboardWithRanks.map((u) => ({
         ...u,
-        createdAt: u.createdAt instanceof Date
-          ? u.createdAt.toISOString()
-          : new Date(u.createdAt as number).toISOString(),
+        createdAt: u.createdAt ? u.createdAt.toISOString() : new Date().toISOString(),
       }))}
       recentReferrals={recentReferrals.map((r) => ({
         id: r.id,
         email: r.referreeEmail,
-        createdAt: r.createdAt instanceof Date
-          ? r.createdAt.toISOString()
-          : new Date(r.createdAt as number).toISOString(),
+        createdAt: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString(),
       }))}
     />
   );

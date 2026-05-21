@@ -17,16 +17,8 @@ interface JobDef {
 }
 
 const JOBS: JobDef[] = [
-  {
-    name: "daily_emails",
-    intervalMs: DAY_MS,
-    run: runDailyEmails,
-  },
-  {
-    name: "weekly_emails_and_snapshot",
-    intervalMs: WEEK_MS,
-    run: runWeeklyEmails,
-  },
+  { name: "daily_emails", intervalMs: DAY_MS, run: runDailyEmails },
+  { name: "weekly_emails_and_snapshot", intervalMs: WEEK_MS, run: runWeeklyEmails },
 ];
 
 let tickInFlight = false;
@@ -37,36 +29,32 @@ export async function tickDueJobs(): Promise<{ ran: string[] }> {
   const ran: string[] = [];
   try {
     for (const job of JOBS) {
-      const state = db.select().from(systemJobs).where(eq(systemJobs.name, job.name)).get();
+      const state = (await db.select().from(systemJobs).where(eq(systemJobs.name, job.name)))[0];
       const lastRun = state?.lastRunAt ? new Date(state.lastRunAt).getTime() : 0;
       const now = Date.now();
       if (now - lastRun < job.intervalMs) continue;
       if (state?.lastRunAt && now - lastRun < FIVE_MIN_MS) continue;
 
       if (!state) {
-        db.insert(systemJobs).values({
-          name: job.name,
-          lastRunAt: new Date(now),
-          runCount: 0,
-        }).run();
+        await db.insert(systemJobs).values({ name: job.name, lastRunAt: new Date(now), runCount: 0 });
       } else {
-        db.update(systemJobs).set({ lastRunAt: new Date(now) }).where(eq(systemJobs.name, job.name)).run();
+        await db.update(systemJobs).set({ lastRunAt: new Date(now) }).where(eq(systemJobs.name, job.name));
       }
 
       try {
         const result = await job.run();
-        db.update(systemJobs).set({
-          lastSuccessAt: result.ok ? new Date(Date.now()) : state?.lastSuccessAt ?? null,
+        await db.update(systemJobs).set({
+          lastSuccessAt: result.ok ? new Date() : state?.lastSuccessAt ?? null,
           lastError: result.ok ? null : result.info ?? "unknown",
           runCount: (state?.runCount ?? 0) + 1,
-        }).where(eq(systemJobs.name, job.name)).run();
+        }).where(eq(systemJobs.name, job.name));
         ran.push(`${job.name}:${result.ok ? "ok" : "fail"}`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        db.update(systemJobs).set({
+        await db.update(systemJobs).set({
           lastError: msg,
           runCount: (state?.runCount ?? 0) + 1,
-        }).where(eq(systemJobs.name, job.name)).run();
+        }).where(eq(systemJobs.name, job.name));
         ran.push(`${job.name}:error`);
       }
     }
@@ -81,11 +69,10 @@ export function tickInBackground() {
 }
 
 async function runDailyEmails(): Promise<{ ok: boolean; info?: string }> {
-  const allUsers = db.select().from(users)
+  const allUsers = await db.select().from(users)
     .where(eq(users.isAdmin, false))
     .orderBy(desc(users.queueScore))
-    .limit(500)
-    .all();
+    .limit(500);
 
   if (allUsers.length === 0) return { ok: true, info: "no users" };
 
@@ -104,12 +91,12 @@ async function runDailyEmails(): Promise<{ ok: boolean; info?: string }> {
         user.email, user.name || "", position, user.referralCount, user.referralCode, topUsers
       );
       if (success) {
-        db.insert(emailLogs).values({
+        await db.insert(emailLogs).values({
           id: generateId(),
           userId: user.id,
           emailType: "daily_ranking",
           subject: `You're #${position} on AgentBay — daily update`,
-        }).run();
+        });
         sent++;
       } else {
         failed++;
@@ -122,10 +109,9 @@ async function runDailyEmails(): Promise<{ ok: boolean; info?: string }> {
 }
 
 async function runWeeklyEmails(): Promise<{ ok: boolean; info?: string }> {
-  const allUsers = db.select().from(users)
+  const allUsers = await db.select().from(users)
     .where(eq(users.isAdmin, false))
-    .orderBy(desc(users.queueScore))
-    .all();
+    .orderBy(desc(users.queueScore));
   const totalSignups = await getTotalSignups();
 
   if (allUsers.length > 0) {
@@ -134,10 +120,10 @@ async function runWeeklyEmails(): Promise<{ ok: boolean; info?: string }> {
       name: u.name,
       referralCount: u.referralCount,
     }));
-    db.insert(leaderboardSnapshots).values({
+    await db.insert(leaderboardSnapshots).values({
       id: generateId(),
       snapshotData: JSON.stringify(snapshot),
-    }).run();
+    });
   }
 
   let sent = 0;
@@ -149,12 +135,12 @@ async function runWeeklyEmails(): Promise<{ ok: boolean; info?: string }> {
         user.email, user.name || "", position, user.referralCount, totalSignups, user.referralCode
       );
       if (success) {
-        db.insert(emailLogs).values({
+        await db.insert(emailLogs).values({
           id: generateId(),
           userId: user.id,
           emailType: "weekly_summary",
           subject: `Weekly AgentBay update — you're #${position}`,
-        }).run();
+        });
         sent++;
       } else {
         failed++;

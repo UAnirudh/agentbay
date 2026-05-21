@@ -1,38 +1,26 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
-import path from "path";
-import fs from "fs";
 
-function resolveDbPath(): string {
-  const envPath = process.env.DATABASE_PATH || process.env.SQLITE_PATH;
-  if (envPath) {
-    const dir = path.dirname(envPath);
-    try { fs.mkdirSync(dir, { recursive: true }); } catch { /* ignore */ }
-    return envPath;
-  }
-  // Auto-detect Railway: RAILWAY_ENVIRONMENT is always set in Railway containers.
-  // Use the persistent volume mount at /data so the DB survives redeployments.
-  if (process.env.RAILWAY_ENVIRONMENT) {
-    try { fs.mkdirSync("/data", { recursive: true }); } catch { /* ignore */ }
-    return "/data/agentbay.db";
-  }
-  return path.resolve(process.cwd(), "prisma", "dev.db");
+declare global {
+  // eslint-disable-next-line no-var
+  var _pgClient: ReturnType<typeof postgres> | undefined;
 }
 
-const DB_PATH = resolveDbPath();
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is not set");
+}
 
-const globalForDb = globalThis as unknown as { sqlite: Database.Database };
-
-const sqlite = globalForDb.sqlite || new Database(DB_PATH);
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("synchronous = NORMAL");
-sqlite.pragma("foreign_keys = ON");
-globalForDb.sqlite = sqlite;
+const client =
+  globalThis._pgClient ??
+  postgres(process.env.DATABASE_URL, {
+    max: 10,
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  });
 
 if (process.env.NODE_ENV !== "production") {
-  console.log(`[db] SQLite at ${DB_PATH}`);
+  globalThis._pgClient = client;
 }
 
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(client, { schema });
 export default db;

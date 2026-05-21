@@ -6,22 +6,26 @@ import { negotiateOffer } from "@/lib/agent";
 import { generateId } from "@/lib/utils";
 import { eq } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
 
   const { listingId, offerCents, message, negotiationId } = await req.json();
 
-  let neg = negotiationId ? db.select().from(negotiations).where(eq(negotiations.id, negotiationId)).get() : null;
+  let neg = negotiationId
+    ? (await db.select().from(negotiations).where(eq(negotiations.id, negotiationId)))[0]
+    : null;
   let listing;
 
   if (neg) {
-    listing = db.select().from(listings).where(eq(listings.id, neg.listingId)).get();
+    listing = (await db.select().from(listings).where(eq(listings.id, neg.listingId)))[0];
   } else {
-    listing = db.select().from(listings).where(eq(listings.id, listingId)).get();
+    listing = (await db.select().from(listings).where(eq(listings.id, listingId)))[0];
     if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     const newId = generateId();
-    db.insert(negotiations).values({
+    await db.insert(negotiations).values({
       id: newId,
       listingId: listing.id,
       buyerId: session.userId,
@@ -31,8 +35,8 @@ export async function POST(req: NextRequest) {
       status: "active",
       lastTurn: "buyer",
       history: JSON.stringify([]),
-    }).run();
-    neg = db.select().from(negotiations).where(eq(negotiations.id, newId)).get()!;
+    });
+    neg = (await db.select().from(negotiations).where(eq(negotiations.id, newId)))[0]!;
   }
 
   if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
@@ -66,17 +70,15 @@ export async function POST(req: NextRequest) {
   const status = agentResponse.willAccept ? "accepted" : "active";
   const finalPrice = agentResponse.willAccept ? offerCents : null;
 
-  db.update(negotiations).set({
+  await db.update(negotiations).set({
     currentOfferCents: agentResponse.offerCents,
     status,
     finalPriceCents: finalPrice,
     history: JSON.stringify(history),
     lastTurn: "seller_agent",
     updatedAt: new Date(),
-  }).where(eq(negotiations.id, neg.id)).run();
+  }).where(eq(negotiations.id, neg.id));
 
-  return NextResponse.json({
-    negotiation: db.select().from(negotiations).where(eq(negotiations.id, neg.id)).get(),
-    agentResponse,
-  });
+  const updated = (await db.select().from(negotiations).where(eq(negotiations.id, neg.id)))[0];
+  return NextResponse.json({ negotiation: updated, agentResponse });
 }

@@ -21,22 +21,21 @@ const CONDITION_COLORS: Record<string, string> = {
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getSession();
-  const listing = db.select().from(listings).where(eq(listings.id, id)).get();
+  const listing = (await db.select().from(listings).where(eq(listings.id, id)))[0];
   if (!listing) notFound();
 
-  db.update(listings).set({ views: listing.views + 1 }).where(eq(listings.id, id)).run();
+  await db.update(listings).set({ views: listing.views + 1 }).where(eq(listings.id, id));
 
-  const seller = db.select({ name: users.name, email: users.email, createdAt: users.createdAt }).from(users).where(eq(users.id, listing.sellerId)).get();
+  const seller = (await db.select({ name: users.name, email: users.email, createdAt: users.createdAt }).from(users).where(eq(users.id, listing.sellerId)))[0];
   const isMyListing = session?.userId === listing.sellerId;
   const tags: string[] = listing.tags ? JSON.parse(listing.tags) : [];
   const icon = CATEGORY_ICONS[listing.category] || "📦";
   const condColor = CONDITION_COLORS[listing.condition] || "slate";
 
-  const related = db.select().from(listings)
+  const related = await db.select().from(listings)
     .where(and(eq(listings.category, listing.category), eq(listings.status, "active"), ne(listings.id, listing.id)))
     .orderBy(desc(listings.createdAt))
-    .limit(4)
-    .all();
+    .limit(4);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
@@ -92,7 +91,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             </div>
             <div className="card p-3">
               <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-1">Listed</p>
-              <p className="text-sm font-semibold text-white">{new Date(listing.createdAt as Date).toLocaleDateString()}</p>
+              <p className="text-sm font-semibold text-white">{listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : ""}</p>
             </div>
           </div>
 

@@ -7,6 +7,8 @@ import { anonymizeEmail } from "@/lib/auth";
 import { eq, desc } from "drizzle-orm";
 import { generateId } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET || "cron-secret-change-in-production";
   const authHeader = req.headers.get("authorization");
@@ -15,11 +17,10 @@ export async function GET(req: NextRequest) {
     return new NextResponse(null, { status: 401 });
   }
 
-  const allUsers = db.select().from(users)
+  const allUsers = await db.select().from(users)
     .where(eq(users.isAdmin, false))
     .orderBy(desc(users.queueScore))
-    .limit(500)
-    .all();
+    .limit(500);
 
   const topUsers = allUsers.slice(0, 10).map((u, i) => ({
     name: u.name || anonymizeEmail(u.email),
@@ -37,12 +38,12 @@ export async function GET(req: NextRequest) {
         user.email, user.name || "", position, user.referralCount, user.referralCode, topUsers
       );
       if (success) {
-        db.insert(emailLogs).values({
+        await db.insert(emailLogs).values({
           id: generateId(),
           userId: user.id,
           emailType: "daily_ranking",
           subject: `You're #${position} on AgentBay — daily update`,
-        }).run();
+        });
         sent++;
       } else {
         failed++;

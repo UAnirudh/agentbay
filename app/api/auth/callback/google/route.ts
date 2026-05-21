@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { users, referralEvents } from "@/lib/schema";
+import { users } from "@/lib/schema";
 import { eq, or } from "drizzle-orm";
 import { signToken, isAdminEmail, COOKIE_NAME } from "@/lib/auth";
 import { generateUniqueReferralCode, creditReferral, getQueuePosition } from "@/lib/referral";
 import { sendWelcomeEmail } from "@/lib/email";
 import { generateId, getAppUrl } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const appUrl = getAppUrl();
@@ -61,16 +63,16 @@ export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
   const isAdmin = isAdminEmail(profile.email);
 
-  let user = db.select().from(users).where(
+  let user = (await db.select().from(users).where(
     or(eq(users.email, profile.email), eq(users.googleId, profile.sub))
-  ).get();
+  ))[0];
 
   const isNewUser = !user;
 
   if (!user) {
     const referralCode = await generateUniqueReferralCode();
     const id = generateId();
-    db.insert(users).values({
+    await db.insert(users).values({
       id,
       email: profile.email,
       name: profile.name || null,
@@ -81,18 +83,18 @@ export async function GET(req: NextRequest) {
       referralCode,
       referredBy: ref || null,
       queueScore: 0,
-    }).run();
-    user = db.select().from(users).where(eq(users.id, id)).get()!;
+    });
+    user = (await db.select().from(users).where(eq(users.id, id)))[0]!;
   } else {
-    db.update(users).set({
+    await db.update(users).set({
       googleId: user.googleId || profile.sub,
       name: profile.name || user.name,
       image: profile.picture || user.image,
       isAdmin: isAdmin || user.isAdmin,
       isApproved: isAdmin ? true : user.isApproved,
       lastLogin: new Date(),
-    }).where(eq(users.id, user.id)).run();
-    user = db.select().from(users).where(eq(users.id, user.id)).get()!;
+    }).where(eq(users.id, user.id));
+    user = (await db.select().from(users).where(eq(users.id, user.id)))[0]!;
   }
 
   if (isNewUser && ref && user) {

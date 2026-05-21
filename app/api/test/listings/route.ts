@@ -6,6 +6,8 @@ import { generateListing } from "@/lib/agent";
 import { generateId } from "@/lib/utils";
 import { eq, desc } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
@@ -15,8 +17,8 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 100);
 
   const rows = mine
-    ? db.select().from(listings).where(eq(listings.sellerId, session.userId)).orderBy(desc(listings.createdAt)).limit(limit).all()
-    : db.select().from(listings).where(eq(listings.status, "active")).orderBy(desc(listings.createdAt)).limit(limit).all();
+    ? await db.select().from(listings).where(eq(listings.sellerId, session.userId)).orderBy(desc(listings.createdAt)).limit(limit)
+    : await db.select().from(listings).where(eq(listings.status, "active")).orderBy(desc(listings.createdAt)).limit(limit);
 
   return NextResponse.json({ listings: rows });
 }
@@ -43,7 +45,6 @@ export async function POST(req: NextRequest) {
   let finalCategory = category || "other";
   let condition = body.condition || "good";
   let priceCents = body.priceCents;
-  let priceFloorCents = body.priceFloorCents;
   let tags: string[] = body.tags || [];
   let aiGenerated = false;
   let draft = null;
@@ -55,7 +56,6 @@ export async function POST(req: NextRequest) {
     finalCategory = draft.category;
     condition = draft.condition;
     priceCents = priceCents || draft.suggestedPriceCents;
-    priceFloorCents = priceFloorCents || draft.priceFloorCents;
     tags = tags.length > 0 ? tags : draft.tags;
     aiGenerated = true;
   }
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
   }
 
   const id = generateId();
-  db.insert(listings).values({
+  await db.insert(listings).values({
     id,
     sellerId: session.userId,
     title,
@@ -79,8 +79,8 @@ export async function POST(req: NextRequest) {
     tags: JSON.stringify(tags),
     location: body.location || null,
     imageUrl: body.imageUrl || null,
-  }).run();
+  });
 
-  const created = db.select().from(listings).where(eq(listings.id, id)).get();
+  const created = (await db.select().from(listings).where(eq(listings.id, id)))[0];
   return NextResponse.json({ listing: created, draft });
 }
