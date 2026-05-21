@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
+import ModeSwitcher from "@/components/ModeSwitcher";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +36,9 @@ export default async function TestLayout({ children }: { children: React.ReactNo
               <Link href="/test/my-listings" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.04] transition">My listings</Link>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/admin" className="btn-ghost text-sm">Admin</Link>
-            <span className="text-xs text-slate-500 hidden sm:inline">{session.email}</span>
+          <div className="flex items-center gap-3">
+            <ModeSwitcher />
+            <Link href="/admin" className="btn-ghost text-sm hidden md:block">Admin</Link>
           </div>
         </div>
       </nav>
