@@ -55,6 +55,14 @@ export const leaderboardSnapshots = sqliteTable("leaderboard_snapshots", {
   snapshotData: text("snapshot_data").notNull(),
 });
 
+export const systemJobs = sqliteTable("system_jobs", {
+  name: text("name").primaryKey(),
+  lastRunAt: integer("last_run_at", { mode: "timestamp_ms" }),
+  lastSuccessAt: integer("last_success_at", { mode: "timestamp_ms" }),
+  lastError: text("last_error"),
+  runCount: integer("run_count").notNull().default(0),
+});
+
 export const rateLimits = sqliteTable("rate_limits", {
   id: text("id").primaryKey(),
   key: text("key").notNull().unique(),

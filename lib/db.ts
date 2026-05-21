@@ -2,16 +2,30 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 import path from "path";
+import fs from "fs";
 
-const DB_PATH = path.resolve(process.cwd(), "prisma", "dev.db");
+function resolveDbPath(): string {
+  const envPath = process.env.DATABASE_PATH || process.env.SQLITE_PATH;
+  if (envPath) {
+    const dir = path.dirname(envPath);
+    try { fs.mkdirSync(dir, { recursive: true }); } catch { /* ignore */ }
+    return envPath;
+  }
+  return path.resolve(process.cwd(), "prisma", "dev.db");
+}
+
+const DB_PATH = resolveDbPath();
 
 const globalForDb = globalThis as unknown as { sqlite: Database.Database };
 
 const sqlite = globalForDb.sqlite || new Database(DB_PATH);
+sqlite.pragma("journal_mode = WAL");
+sqlite.pragma("synchronous = NORMAL");
+sqlite.pragma("foreign_keys = ON");
+globalForDb.sqlite = sqlite;
 
 if (process.env.NODE_ENV !== "production") {
-  globalForDb.sqlite = sqlite;
-  sqlite.pragma("journal_mode = WAL");
+  console.log(`[db] SQLite at ${DB_PATH}`);
 }
 
 export const db = drizzle(sqlite, { schema });

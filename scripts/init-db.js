@@ -1,7 +1,10 @@
 const Database = require("better-sqlite3");
 const path = require("path");
+const fs = require("fs");
 
-const dbPath = path.resolve(__dirname, "..", "prisma", "dev.db");
+const envPath = process.env.DATABASE_PATH || process.env.SQLITE_PATH;
+const dbPath = envPath || path.resolve(__dirname, "..", "prisma", "dev.db");
+fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 const db = new Database(dbPath);
 db.pragma("journal_mode = WAL");
 
@@ -58,6 +61,14 @@ CREATE TABLE IF NOT EXISTS leaderboard_snapshots (
   id TEXT PRIMARY KEY,
   snapshot_date INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000),
   snapshot_data TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS system_jobs (
+  name TEXT PRIMARY KEY,
+  last_run_at INTEGER,
+  last_success_at INTEGER,
+  last_error TEXT,
+  run_count INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS rate_limits (

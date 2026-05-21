@@ -6,6 +6,7 @@ import { users } from "@/lib/schema";
 import { desc, asc } from "drizzle-orm";
 import { anonymizeEmail } from "@/lib/auth";
 import { getTotalSignups } from "@/lib/referral";
+import { tickInBackground } from "@/lib/jobs";
 import WaitlistSignup from "@/components/WaitlistSignup";
 
 async function getFullLeaderboard() {
@@ -23,6 +24,7 @@ async function getFullLeaderboard() {
 }
 
 export default async function LeaderboardPage() {
+  tickInBackground();
   const [allUsers, total] = await Promise.all([getFullLeaderboard(), getTotalSignups()]);
 
   const medals = ["🥇", "🥈", "🥉"];
