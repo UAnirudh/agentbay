@@ -6,7 +6,6 @@ import AnimatedCounter from "@/components/AnimatedCounter";
 import WaitlistSignup from "@/components/WaitlistSignup";
 import LiveLeaderboard from "@/components/LiveLeaderboard";
 import { getTotalSignups } from "@/lib/referral";
-import { tickInBackground } from "@/lib/jobs";
 
 async function getSignupCount() {
   try { return await getTotalSignups(); } catch { return 0; }
@@ -19,7 +18,6 @@ export default async function LandingPage({
 }) {
   const params = await searchParams;
   const ref = params.ref;
-  tickInBackground();
   const count = await getSignupCount();
 
   return (

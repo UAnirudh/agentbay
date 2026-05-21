@@ -36,26 +36,6 @@ export default function AdminDashboard({ session, stats, topReferrers, recentSig
     }
   };
 
-  const [runningJobs, setRunningJobs] = useState(false);
-  const [jobResult, setJobResult] = useState<string | null>(null);
-
-  const runJobs = async (force: boolean) => {
-    setRunningJobs(true);
-    setJobResult(null);
-    try {
-      const res = await fetch("/api/admin/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ force }),
-      });
-      const data = await res.json();
-      setJobResult(data.ran && data.ran.length > 0 ? `Ran: ${data.ran.join(", ")}` : "Nothing was due. Use Force to override.");
-    } catch {
-      setJobResult("Failed");
-    } finally {
-      setRunningJobs(false);
-    }
-  };
 
   return (
     <div className="min-h-screen relative">
@@ -181,25 +161,6 @@ export default function AdminDashboard({ session, stats, topReferrers, recentSig
           </div>
         </div>
 
-        {/* Scheduled jobs */}
-        <div className="card p-6">
-          <h2 className="font-bold text-white mb-2">Scheduled jobs</h2>
-          <p className="text-sm text-slate-400 mb-4">
-            Daily and weekly emails run automatically when the site receives a request and their interval has elapsed. No external cron needed.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <button onClick={() => runJobs(false)} disabled={runningJobs} className="btn-secondary text-sm disabled:opacity-50">
-              {runningJobs ? "Running..." : "▶ Run due jobs now"}
-            </button>
-            <button onClick={() => runJobs(true)} disabled={runningJobs} className="btn-primary text-sm disabled:opacity-50">
-              {runningJobs ? "Running..." : "⚡ Force-run all (send all emails now)"}
-            </button>
-          </div>
-          {jobResult && (
-            <p className="text-xs text-slate-400 mt-3 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] font-mono">{jobResult}</p>
-          )}
-          <p className="text-xs text-slate-600 mt-3">Force-run resets all timestamps and re-sends every email. Use carefully.</p>
-        </div>
       </div>
     </div>
   );

@@ -1,10 +1,14 @@
 import { Resend } from "resend";
 
-const resend = process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes("placeholder")
+if (!process.env.RESEND_API_KEY) {
+  console.warn("[email] RESEND_API_KEY is not set — emails will NOT be sent. Add it in Railway environment variables.");
+}
+
+const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const FROM = process.env.EMAIL_FROM || "AgentBay <hello@agentbay.ai>";
+const FROM = process.env.EMAIL_FROM || "AgentBay <onboarding@resend.dev>";
 const _rawUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 const APP_URL = _rawUrl.startsWith("http") ? _rawUrl : `https://${_rawUrl}`;
 
@@ -21,10 +25,15 @@ export async function sendEmail(opts: SendOptions): Promise<boolean> {
     return true;
   }
   try {
-    await resend.emails.send({ from: FROM, to: opts.to, subject: opts.subject, html: opts.html });
+    const { error } = await resend.emails.send({ from: FROM, to: opts.to, subject: opts.subject, html: opts.html });
+    if (error) {
+      console.error(`[email] Resend error for "${opts.subject}" to ${opts.to}:`, error);
+      return false;
+    }
+    console.log(`[email] Sent "${opts.subject}" to ${opts.to}`);
     return true;
   } catch (err) {
-    console.error("[EMAIL] Failed to send:", err);
+    console.error(`[email] Failed to send "${opts.subject}" to ${opts.to}:`, err instanceof Error ? err.message : err);
     return false;
   }
 }
