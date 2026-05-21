@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import AgentAvatar from "@/components/AgentAvatar";
 
 interface Draft {
   title: string;
@@ -134,7 +135,14 @@ export default function SellAgent() {
             disabled={loading || !description.trim()}
             className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "AI is writing your listing..." : "Generate listing with AI"}
+            {loading ? (
+              <span className="flex items-center justify-center gap-3">
+                <AgentAvatar mood="thinking" size="sm" />
+                AI is writing your listing...
+              </span>
+            ) : (
+              "✨ Generate listing with AI"
+            )}
           </button>
 
           {!description && (

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { resolveMarketplace } from "@/lib/marketplaces";
+import AgentAvatar from "@/components/AgentAvatar";
 
 interface Deal {
   title: string;
@@ -16,8 +18,6 @@ interface Deal {
   negotiable: boolean;
   estimatedSavings?: number;
 }
-
-import { resolveMarketplace } from "@/lib/marketplaces";
 
 const examples = [
   "MacBook Pro M3 under $1400",
@@ -108,9 +108,12 @@ export default function BuyAgent() {
       </div>
 
       {loading && (
-        <div className="card p-8 text-center">
-          <div className="inline-block w-8 h-8 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin mb-3" />
-          <p className="text-slate-400 text-sm">Agent scanning marketplaces, ranking by match quality, finding the best deals...</p>
+        <div className="card p-10 text-center">
+          <div className="inline-block mb-4">
+            <AgentAvatar mood="searching" size="lg" label="scanning..." />
+          </div>
+          <p className="text-white font-semibold mb-1">Agent is searching the web</p>
+          <p className="text-slate-400 text-sm">Scanning eBay, Facebook, Craigslist, OfferUp, Mercari, and AgentBay in parallel</p>
         </div>
       )}
 
@@ -122,12 +125,13 @@ export default function BuyAgent() {
 
       {!loading && deals.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-slate-400">
-              <strong className="text-white">{deals.length}</strong> matches across{" "}
-              <strong className="text-white">{new Set(deals.map((d) => d.source)).size}</strong> sources
-            </p>
-            <p className="text-xs text-slate-600">Ranked by match score</p>
+          <div className="card p-4 mb-4 flex items-center gap-4">
+            <AgentAvatar mood="happy" size="sm" />
+            <div className="flex-1">
+              <p className="text-sm text-white font-semibold">Found <strong>{deals.length}</strong> matches across <strong>{new Set(deals.map((d) => d.source)).size}</strong> sources</p>
+              <p className="text-xs text-slate-400">Best price: ${(Math.min(...deals.map((d) => d.priceCents)) / 100).toFixed(0)} · Avg match: {Math.round(deals.reduce((s, d) => s + d.matchScore, 0) / deals.length)}%</p>
+            </div>
+            <p className="text-xs text-slate-600 hidden sm:block">Ranked by match score</p>
           </div>
           <div className="grid gap-3">
             {deals.map((d, i) => {
