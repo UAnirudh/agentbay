@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { buildSearchUrl } from "./marketplaces";
 
 const groqKey = process.env.GROQ_API_KEY;
 const groq = groqKey && !groqKey.includes("placeholder") ? new Groq({ apiKey: groqKey }) : null;
@@ -89,6 +90,7 @@ Make at least one listing be on "agentbay" source. Vary prices and conditions re
         ...d,
         priceCents: Math.max(0, Math.floor(d.priceCents || 0)),
         matchScore: Math.max(0, Math.min(100, d.matchScore || 50)),
+        url: d.source === "agentbay" ? d.url : buildSearchUrl(d.source, `${d.title}`),
       }));
     }
   } catch (err) {
@@ -194,19 +196,22 @@ Return ONLY valid JSON for your next move:
 function mockDeals(query: string, n: number): WebDeal[] {
   const sources = ["agentbay", "ebay", "facebook", "craigslist", "offerup", "mercari"] as const;
   const base = 5000 + Math.floor(Math.random() * 50000);
-  return Array.from({ length: n }, (_, i) => ({
-    title: `${query} — Option ${i + 1}`,
-    description: `Sample listing matching "${query}". Real-time search disabled (no GROQ_API_KEY set).`,
-    priceCents: base + i * 1500,
-    source: sources[i % sources.length],
-    url: `https://example.com/listing/${i}`,
-    condition: i % 3 === 0 ? "like_new" : i % 3 === 1 ? "good" : "new",
-    location: "Sample, NY",
-    matchScore: Math.max(60, 95 - i * 5),
-    reasoning: "Mock result. Configure GROQ_API_KEY to get real-time web search.",
-    negotiable: i % 2 === 0,
-    estimatedSavings: i * 500,
-  }));
+  return Array.from({ length: n }, (_, i) => {
+    const source = sources[i % sources.length];
+    return {
+      title: `${query} — Option ${i + 1}`,
+      description: `Sample listing matching "${query}". Real-time search disabled (no GROQ_API_KEY set).`,
+      priceCents: base + i * 1500,
+      source,
+      url: source === "agentbay" ? "/test/marketplace" : buildSearchUrl(source, query),
+      condition: i % 3 === 0 ? "like_new" : i % 3 === 1 ? "good" : "new",
+      location: "Sample, NY",
+      matchScore: Math.max(60, 95 - i * 5),
+      reasoning: "Mock result. Configure GROQ_API_KEY to get real-time web search.",
+      negotiable: i % 2 === 0,
+      estimatedSavings: i * 500,
+    };
+  });
 }
 
 function mockListing(description: string): ListingDraft {

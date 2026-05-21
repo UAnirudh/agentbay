@@ -17,14 +17,7 @@ interface Deal {
   estimatedSavings?: number;
 }
 
-const sourceLabels: Record<string, { name: string; color: string }> = {
-  agentbay: { name: "AgentBay", color: "brand" },
-  ebay: { name: "eBay", color: "amber" },
-  facebook: { name: "Facebook", color: "blue" },
-  craigslist: { name: "Craigslist", color: "purple" },
-  offerup: { name: "OfferUp", color: "green" },
-  mercari: { name: "Mercari", color: "pink" },
-};
+import { resolveMarketplace } from "@/lib/marketplaces";
 
 const examples = [
   "MacBook Pro M3 under $1400",
@@ -138,7 +131,7 @@ export default function BuyAgent() {
           </div>
           <div className="grid gap-3">
             {deals.map((d, i) => {
-              const src = sourceLabels[d.source] || { name: d.source, color: "slate" };
+              const src = resolveMarketplace(d.source);
               const price = (d.priceCents / 100).toFixed(2);
               const isAgentBay = d.source === "agentbay";
               return (
@@ -179,7 +172,7 @@ export default function BuyAgent() {
                         </Link>
                       ) : (
                         <a href={d.url} target="_blank" rel="noopener noreferrer" className="btn-secondary text-sm py-2 px-4 w-full text-center">
-                          View on {src.name} ↗
+                          Search {src.name} ↗
                         </a>
                       )}
                     </div>
