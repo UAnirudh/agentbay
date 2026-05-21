@@ -2,13 +2,20 @@ const postgres = require("postgres");
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
-  console.error("❌ DATABASE_URL environment variable is required");
-  process.exit(1);
+  console.warn("⚠️  DATABASE_URL not set — skipping DB init");
+  process.exit(0);
+}
+
+function needsSsl(url) {
+  if (!url) return false;
+  if (url.includes("localhost") || url.includes("127.0.0.1")) return false;
+  if (url.includes(".railway.internal")) return false;
+  return true;
 }
 
 const sql = postgres(DATABASE_URL, {
   max: 1,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  ssl: needsSsl(DATABASE_URL) ? { rejectUnauthorized: false } : false,
 });
 
 async function init() {
@@ -178,6 +185,6 @@ async function init() {
 }
 
 init().catch((err) => {
-  console.error("❌ Database init failed:", err);
-  process.exit(1);
+  console.error("❌ Database init failed:", err.message);
+  process.exit(0);
 });

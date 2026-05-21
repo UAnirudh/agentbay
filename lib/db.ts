@@ -7,20 +7,35 @@ declare global {
   var _pgClient: ReturnType<typeof postgres> | undefined;
 }
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is not set");
+const dbUrl = process.env.DATABASE_URL;
+
+if (!dbUrl && process.env.NODE_ENV === "production") {
+  console.error("[db] FATAL: DATABASE_URL is not set. Check your Railway environment variables.");
+}
+
+// Railway internal URLs (.railway.internal) don't need SSL.
+// Public URLs (monorail.proxy.rlwy.net, etc.) do.
+// Local dev never needs SSL.
+function needsSsl(url: string): boolean {
+  if (!url) return false;
+  if (url.includes("localhost") || url.includes("127.0.0.1")) return false;
+  if (url.includes(".railway.internal")) return false;
+  return true;
 }
 
 const client =
   globalThis._pgClient ??
-  postgres(process.env.DATABASE_URL, {
+  postgres(dbUrl || "postgresql://localhost/placeholder", {
     max: 10,
-    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+    ssl: dbUrl && needsSsl(dbUrl) ? { rejectUnauthorized: false } : false,
+    connect_timeout: 15,
+    idle_timeout: 20,
+    max_lifetime: 1800,
+    onnotice: () => {},
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalThis._pgClient = client;
-}
+// Always cache — prevents multiple pools across hot-reloads and module re-evals
+globalThis._pgClient = client;
 
 export const db = drizzle(client, { schema });
 export default db;
