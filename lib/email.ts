@@ -9,6 +9,8 @@ const resend = process.env.RESEND_API_KEY
   : null;
 
 const FROM = process.env.EMAIL_FROM || "AgentBay <onboarding@resend.dev>";
+const REPLY_TO = "uanirudh0811@gmail.com";
+const ADMIN_EMAIL = "uanirudh0811@gmail.com";
 const _rawUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 const APP_URL = _rawUrl.startsWith("http") ? _rawUrl : `https://${_rawUrl}`;
 
@@ -25,7 +27,7 @@ export async function sendEmail(opts: SendOptions): Promise<boolean> {
     return true;
   }
   try {
-    const { error } = await resend.emails.send({ from: FROM, to: opts.to, subject: opts.subject, html: opts.html });
+    const { error } = await resend.emails.send({ from: FROM, to: opts.to, replyTo: REPLY_TO, subject: opts.subject, html: opts.html });
     if (error) {
       console.error(`[email] Resend error for "${opts.subject}" to ${opts.to}:`, error);
       return false;
@@ -105,7 +107,20 @@ export async function sendWelcomeEmail(to: string, name: string, referralCode: s
     </div>
   `);
 
-  return sendEmail({ to, subject: `You're #${position} on the AgentBay waitlist 🚀`, html, type: "welcome" });
+  await sendEmail({ to, subject: `You're #${position} on the AgentBay waitlist 🚀`, html, type: "welcome" });
+
+  if (to !== ADMIN_EMAIL) {
+    const adminHtml = emailWrapper(`
+      <h2 style="font-size:20px;font-weight:800;margin:0 0 12px;color:#F8FAFC;">New signup: ${name || to}</h2>
+      <p style="color:#94A3B8;margin:0 0 8px;">Email: <strong style="color:#F8FAFC;">${to}</strong></p>
+      <p style="color:#94A3B8;margin:0 0 8px;">Position: <strong style="color:#6366F1;">#${position}</strong></p>
+      <p style="color:#94A3B8;margin:0 0 8px;">Referral code: <strong style="color:#F8FAFC;">${referralCode}</strong></p>
+      <a href="${APP_URL}/admin" style="display:inline-block;margin-top:16px;background:linear-gradient(135deg,#6366F1,#A855F7);color:white;font-weight:700;font-size:14px;padding:10px 20px;border-radius:8px;text-decoration:none;">View Admin Dashboard →</a>
+    `);
+    sendEmail({ to: ADMIN_EMAIL, subject: `New AgentBay signup: ${name || to} (#${position})`, html: adminHtml, type: "admin_notification" }).catch(() => {});
+  }
+
+  return true;
 }
 
 export async function sendMilestoneEmail(to: string, name: string, milestone: string, position: number, referralCode: string) {
