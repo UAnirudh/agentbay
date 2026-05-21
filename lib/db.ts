@@ -11,6 +11,12 @@ function resolveDbPath(): string {
     try { fs.mkdirSync(dir, { recursive: true }); } catch { /* ignore */ }
     return envPath;
   }
+  // Auto-detect Railway: RAILWAY_ENVIRONMENT is always set in Railway containers.
+  // Use the persistent volume mount at /data so the DB survives redeployments.
+  if (process.env.RAILWAY_ENVIRONMENT) {
+    try { fs.mkdirSync("/data", { recursive: true }); } catch { /* ignore */ }
+    return "/data/agentbay.db";
+  }
   return path.resolve(process.cwd(), "prisma", "dev.db");
 }
 

@@ -3,7 +3,15 @@ const path = require("path");
 const fs = require("fs");
 
 const envPath = process.env.DATABASE_PATH || process.env.SQLITE_PATH;
-const dbPath = envPath || path.resolve(__dirname, "..", "prisma", "dev.db");
+let dbPath;
+if (envPath) {
+  dbPath = envPath;
+} else if (process.env.RAILWAY_ENVIRONMENT) {
+  // Use persistent volume so data survives Railway redeployments
+  dbPath = "/data/agentbay.db";
+} else {
+  dbPath = path.resolve(__dirname, "..", "prisma", "dev.db");
+}
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 const db = new Database(dbPath);
 db.pragma("journal_mode = WAL");
