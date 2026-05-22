@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   referralCount: integer("referral_count").notNull().default(0),
   queueScore: real("queue_score").notNull().default(0),
   lastLogin: timestamp("last_login"),
+  preferences: text("preferences"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

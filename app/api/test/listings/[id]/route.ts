@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
-  if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
+  if (!session) return new NextResponse(null, { status: 401 });
   const { id } = await params;
   const listing = (await db.select().from(listings).where(eq(listings.id, id)))[0];
   if (!listing) return new NextResponse(null, { status: 404 });
@@ -18,7 +18,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
-  if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
+  if (!session) return new NextResponse(null, { status: 401 });
   const { id } = await params;
   const listing = (await db.select().from(listings).where(eq(listings.id, id)))[0];
   if (!listing) return new NextResponse(null, { status: 404 });

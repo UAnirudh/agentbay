@@ -172,6 +172,9 @@ export async function initializeDatabase(): Promise<void> {
     await sql`CREATE INDEX IF NOT EXISTS idx_referral_events_referrer ON referral_events(referrer_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_email_logs_user ON email_logs(user_id)`;
 
+    // Safe additive migrations — add new columns without breaking existing data
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences TEXT`;
+
     console.log("[db-init] All tables ready ✓");
   } catch (err) {
     console.error("[db-init] Table creation failed:", err instanceof Error ? err.message : err);

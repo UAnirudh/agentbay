@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function TestLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  if (!session?.isAdmin) notFound();
+  if (!session) notFound();
 
   return (
     <div className="min-h-screen relative">
@@ -34,11 +34,13 @@ export default async function TestLayout({ children }: { children: React.ReactNo
               <Link href="/test/marketplace" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.04] transition">Marketplace</Link>
               <Link href="/test/negotiations" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.04] transition">Negotiations</Link>
               <Link href="/test/my-listings" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.04] transition">My listings</Link>
+              <Link href="/test/preferences" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.04] transition">Preferences</Link>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <ModeSwitcher />
-            <Link href="/admin" className="btn-ghost text-sm hidden md:block">Admin</Link>
+            <Link href="/test/chat" className="btn-primary text-sm py-1.5">💬 Chat</Link>
+            {session.isAdmin && <Link href="/admin" className="btn-ghost text-sm hidden md:block">Admin</Link>}
           </div>
         </div>
       </nav>

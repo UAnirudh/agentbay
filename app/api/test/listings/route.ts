@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
-  if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
+  if (!session) return new NextResponse(null, { status: 401 });
 
   const url = req.nextUrl;
   const mine = url.searchParams.get("mine") === "1";
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
-  if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
+  if (!session) return new NextResponse(null, { status: 401 });
 
   const body = await req.json();
   const { description, category, useAI, dryRun } = body;

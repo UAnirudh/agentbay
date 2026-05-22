@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(_: NextRequest) {
   const session = await getSession();
-  if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
+  if (!session) return new NextResponse(null, { status: 401 });
 
   const rows = await db.select().from(negotiations)
     .where(or(eq(negotiations.buyerId, session.userId), eq(negotiations.sellerId, session.userId)))

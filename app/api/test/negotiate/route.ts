@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
-  if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
+  if (!session) return new NextResponse(null, { status: 401 });
 
   const { listingId, offerCents, message, negotiationId } = await req.json();
 

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { listings, agentSessions, agentMessages } from "@/lib/schema";
-import { searchWebForDeals, type WebDeal } from "@/lib/agent";
+import { listings, agentSessions, agentMessages, users } from "@/lib/schema";
+import { searchWebForDeals, type WebDeal, type UserPreferences } from "@/lib/agent";
 import { generateId } from "@/lib/utils";
 import { eq, like, or, and } from "drizzle-orm";
 
@@ -10,12 +10,16 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
-  if (!session?.isAdmin) return new NextResponse(null, { status: 404 });
+  if (!session) return new NextResponse(null, { status: 401 });
 
   const { query, maxResults } = await req.json();
   if (!query || typeof query !== "string") {
     return NextResponse.json({ error: "Missing query" }, { status: 400 });
   }
+
+  // Load user preferences to improve search quality
+  const userRow = (await db.select({ preferences: users.preferences }).from(users).where(eq(users.id, session.userId)))[0];
+  const preferences: UserPreferences | undefined = userRow?.preferences ? JSON.parse(userRow.preferences) : undefined;
 
   const sessionId = generateId();
   await db.insert(agentSessions).values({
@@ -57,7 +61,7 @@ export async function POST(req: NextRequest) {
     estimatedSavings: 0,
   }));
 
-  const webDeals = await searchWebForDeals(query, Math.max(5, (maxResults || 8) - internalDeals.length));
+  const webDeals = await searchWebForDeals(query, Math.max(5, (maxResults || 8) - internalDeals.length), preferences);
   const all = [...internalDeals, ...webDeals].sort((a, b) => b.matchScore - a.matchScore);
 
   await db.insert(agentMessages).values({
