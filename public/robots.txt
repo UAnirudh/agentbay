@@ -1,0 +1,61 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /test
+Disallow: /login
+Disallow: /register
+Disallow: /waitlist/dashboard
+
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /test
+Disallow: /login
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /test
+
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /leaderboard
+Disallow: /api/
+Disallow: /admin
+
+User-agent: GPTBot
+Allow: /
+Allow: /leaderboard
+Disallow: /api/
+Disallow: /admin
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /leaderboard
+Disallow: /api/
+Disallow: /admin
+
+User-agent: Claude-SearchBot
+Allow: /
+Allow: /leaderboard
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /leaderboard
+Disallow: /api/
+Disallow: /admin
+
+User-agent: anthropic-ai
+Allow: /
+
+Sitemap: https://agentbay.com/sitemap.xml
